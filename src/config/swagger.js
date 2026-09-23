@@ -2,6 +2,14 @@ const swaggerJsdoc = require("swagger-jsdoc");
 
 const PORT = process.env.PORT || 3000;
 
+// Render sets RENDER_EXTERNAL_URL automatically to the service's public URL,
+// so the deployed docs always point at themselves with no manual config.
+const servers = [];
+if (process.env.RENDER_EXTERNAL_URL) {
+  servers.push({ url: process.env.RENDER_EXTERNAL_URL, description: "Deployed server" });
+}
+servers.push({ url: `http://localhost:${PORT}`, description: "Local server" });
+
 const options = {
   definition: {
     openapi: "3.0.3",
@@ -11,7 +19,7 @@ const options = {
       description:
         "Basic REST API for an e-commerce app (auth, products, cart, wishlist). Data is in-memory and resets on restart.",
     },
-    servers: [{ url: `http://localhost:${PORT}`, description: "Local server" }],
+    servers,
     components: {
       securitySchemes: {
         bearerAuth: {
