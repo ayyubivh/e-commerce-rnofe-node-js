@@ -10,10 +10,9 @@ function findById(id) {
   return users.find((u) => u.id === Number(id));
 }
 
-function createUser({ name, email, passwordHash }) {
+function createUser({ email, passwordHash }) {
   const user = {
     id: nextId++,
-    name,
     email,
     passwordHash,
     cart: [], // { productId, quantity }

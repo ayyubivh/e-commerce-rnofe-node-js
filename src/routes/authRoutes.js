@@ -1,13 +1,13 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
 const validate = require("../middleware/validate");
-const { signup, login } = require("../controllers/authController");
+const { register, login } = require("../controllers/authController");
 
 const router = Router();
 
 /**
  * @swagger
- * /api/auth/signup:
+ * /api/auth/register:
  *   post:
  *     summary: Register a new user
  *     tags: [Auth]
@@ -17,11 +17,8 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, password]
+ *             required: [email, password]
  *             properties:
- *               name:
- *                 type: string
- *                 example: Ada Lovelace
  *               email:
  *                 type: string
  *                 format: email
@@ -52,14 +49,13 @@ const router = Router();
  *               $ref: '#/components/schemas/Error'
  */
 router.post(
-  "/signup",
+  "/register",
   [
-    body("name").trim().notEmpty().withMessage("Name is required"),
-    body("email").trim().isEmail().withMessage("A valid email is required").normalizeEmail(),
+    body("email").trim().isEmail().withMessage("A valid email is required").normalizeEmail({ gmail_remove_dots: false }),
     body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
   ],
   validate,
-  signup
+  register
 );
 
 /**
@@ -107,7 +103,7 @@ router.post(
 router.post(
   "/login",
   [
-    body("email").trim().isEmail().withMessage("A valid email is required").normalizeEmail(),
+    body("email").trim().isEmail().withMessage("A valid email is required").normalizeEmail({ gmail_remove_dots: false }),
     body("password").notEmpty().withMessage("Password is required"),
   ],
   validate,

@@ -5,15 +5,18 @@ const asyncHandler = require("../utils/asyncHandler");
 
 const SALT_ROUNDS = 10;
 
-const signup = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+const register = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  // Hash first, then check + create with no await in between, so two concurrent
+  // registrations for the same email can't both pass the uniqueness check.
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   if (findByEmail(email)) {
     return res.status(409).json({ error: "An account with this email already exists" });
   }
 
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const user = createUser({ name, email, passwordHash });
+  const user = createUser({ email, passwordHash });
   const token = signToken({ id: user.id, email: user.email });
 
   res.status(201).json({ user: toPublicUser(user), token });
@@ -36,4 +39,4 @@ const login = asyncHandler(async (req, res) => {
   res.status(200).json({ user: toPublicUser(user), token });
 });
 
-module.exports = { signup, login };
+module.exports = { register, login };

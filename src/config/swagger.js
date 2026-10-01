@@ -2,13 +2,13 @@ const swaggerJsdoc = require("swagger-jsdoc");
 
 const PORT = process.env.PORT || 3000;
 
-// Render sets RENDER_EXTERNAL_URL automatically to the service's public URL,
-// so the deployed docs always point at themselves with no manual config.
-const servers = [];
-if (process.env.RENDER_EXTERNAL_URL) {
-  servers.push({ url: process.env.RENDER_EXTERNAL_URL, description: "Deployed server" });
-}
-servers.push({ url: `http://localhost:${PORT}`, description: "Local server" });
+// Render sets RENDER_EXTERNAL_URL automatically to the service's public URL;
+// fall back to the known deployed URL so local runs can also try the live API.
+const DEPLOYED_URL = process.env.RENDER_EXTERNAL_URL || "https://e-commerce-rnofe-node-js.onrender.com";
+const servers = [
+  { url: DEPLOYED_URL, description: "Deployed server" },
+  { url: `http://localhost:${PORT}`, description: "Local server" },
+];
 
 const options = {
   definition: {
@@ -17,7 +17,7 @@ const options = {
       title: "E-Commerce API",
       version: "1.0.0",
       description:
-        "Basic REST API for an e-commerce app (auth, products, cart, wishlist). Data is in-memory and resets on restart.",
+        "Basic REST API for an e-commerce app (register/login by email, products, cart, wishlist). Data is in-memory and resets on restart.",
     },
     servers,
     components: {
@@ -33,7 +33,6 @@ const options = {
           type: "object",
           properties: {
             id: { type: "integer", example: 1 },
-            name: { type: "string", example: "Ada Lovelace" },
             email: { type: "string", format: "email", example: "ada@example.com" },
             cart: {
               type: "array",

@@ -5,7 +5,7 @@ data (no database needed) so it's easy to run and test locally.
 
 ## Features
 
-- JWT-based authentication (signup / login)
+- JWT-based authentication (register / login with email + password)
 - Password hashing with bcrypt
 - Protected routes for cart and wishlist
 - Seeded in-memory product catalog
@@ -124,7 +124,7 @@ are running.
 
 Once the server is running, open **http://localhost:3000/api-docs** for an
 interactive Swagger UI covering every endpoint — you can try each request
-right from the browser. Click **Authorize** and paste a token (from signup/login)
+right from the browser. Click **Authorize** and paste a token (from register/login)
 to call the protected cart/wishlist routes.
 
 The raw OpenAPI spec (JSON) is available at `http://localhost:3000/api-docs.json`
@@ -133,7 +133,7 @@ if you want to import it into Postman/Insomnia instead of using curl.
 ## Auth
 
 Protected routes require an `Authorization: Bearer <token>` header, using the
-token returned by signup or login.
+token returned by register or login.
 
 CORS is open to all origins (`cors()` with no config), so a frontend app on
 any domain — `localhost:5173`, a deployed Vercel/Netlify app, etc. — can call
@@ -143,25 +143,25 @@ this API directly once it's hosted, no extra configuration needed.
 
 Base URL: `http://localhost:3000`
 
-### 1. Sign up
+### 1. Register
 
-`POST /api/auth/signup`
+`POST /api/auth/register`
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/signup \
+curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ada Lovelace","email":"ada@example.com","password":"secret123"}'
+  -d '{"email":"ada@example.com","password":"secret123"}'
 ```
 
 Success `201`:
 ```json
 {
-  "user": { "id": 1, "name": "Ada Lovelace", "email": "ada@example.com", "cart": [], "wishlist": [] },
+  "user": { "id": 1, "email": "ada@example.com", "cart": [], "wishlist": [] },
   "token": "eyJhbGciOi..."
 }
 ```
 
-Errors: `400` invalid input, `409` email already registered.
+Errors: `400` invalid email / password shorter than 6 chars, `409` email already registered.
 
 ### 2. Log in
 
@@ -173,7 +173,7 @@ curl -X POST http://localhost:3000/api/auth/login \
   -d '{"email":"ada@example.com","password":"secret123"}'
 ```
 
-Success `200`: same shape as signup (`user`, `token`).
+Success `200`: same shape as register (`user`, `token`).
 Errors: `400` invalid input, `401` invalid credentials.
 
 ### 3. List products
@@ -239,16 +239,16 @@ Errors: `400` invalid input, `401` missing/invalid token, `404` product not foun
 Import as a Postman collection by creating requests for each `curl` command
 above, or use Postman's "Import > Raw text" and paste a curl command directly
 — Postman will convert it to a request automatically. Set a collection
-variable `token` after login/signup and use `Bearer {{token}}` as the
+variable `token` after login/register and use `Bearer {{token}}` as the
 Authorization header value for the cart/wishlist requests.
 
 ## Testing quickly end-to-end
 
 ```bash
-# 1. Sign up and capture the token
-TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/signup \
+# 1. Register and capture the token
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Ada","email":"ada@example.com","password":"secret123"}' | \
+  -d '{"email":"ada@example.com","password":"secret123"}' | \
   node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).token))")
 
 # 2. Use it on a protected route
