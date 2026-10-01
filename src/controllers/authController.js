@@ -8,24 +8,22 @@ const SALT_ROUNDS = 10;
 const register = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Hash first, then check + create with no await in between, so two concurrent
-  // registrations for the same email can't both pass the uniqueness check.
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  if (findByEmail(email)) {
+  // createUser returns null when the email is taken (enforced by the UNIQUE constraint in the database).
+  const user = await createUser({ email, passwordHash });
+  if (!user) {
     return res.status(409).json({ error: "An account with this email already exists" });
   }
 
-  const user = createUser({ email, passwordHash });
   const token = signToken({ id: user.id, email: user.email });
-
-  res.status(201).json({ user: toPublicUser(user), token });
+  res.status(201).json({ user: await toPublicUser(user), token });
 });
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = findByEmail(email);
+  const user = await findByEmail(email);
   if (!user) {
     return res.status(401).json({ error: "Invalid email or password" });
   }
@@ -36,7 +34,7 @@ const login = asyncHandler(async (req, res) => {
   }
 
   const token = signToken({ id: user.id, email: user.email });
-  res.status(200).json({ user: toPublicUser(user), token });
+  res.status(200).json({ user: await toPublicUser(user), token });
 });
 
 module.exports = { register, login };

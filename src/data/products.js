@@ -1,4 +1,4 @@
-// Seeded in-memory product catalog. No database required.
+// Seed data for the product catalog: inserted into the products table on startup (see src/db/init.js).
 // Images are hotlinked from Unsplash (free-to-use stock photos), each picked to match the product.
 const products = [
   {

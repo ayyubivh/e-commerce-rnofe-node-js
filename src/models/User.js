@@ -1,30 +1,47 @@
-// In-memory user store. Data is lost when the server restarts.
-let users = [];
-let nextId = 1;
+const pool = require("../db/pool");
+const { getCart } = require("./Cart");
+const { getWishlist } = require("./Wishlist");
 
-function findByEmail(email) {
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+const UNIQUE_VIOLATION = "23505";
+
+function toUser(row) {
+  return row && { id: row.id, email: row.email, passwordHash: row.password_hash };
 }
 
-function findById(id) {
-  return users.find((u) => u.id === Number(id));
+async function findByEmail(email) {
+  const { rows } = await pool.query(
+    "SELECT id, email, password_hash FROM users WHERE LOWER(email) = LOWER($1)",
+    [email]
+  );
+  return toUser(rows[0]);
 }
 
-function createUser({ email, passwordHash }) {
-  const user = {
-    id: nextId++,
-    email,
-    passwordHash,
-    cart: [], // { productId, quantity }
-    wishlist: [], // productId[]
-  };
-  users.push(user);
-  return user;
+async function findById(id) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId)) return undefined;
+  const { rows } = await pool.query("SELECT id, email, password_hash FROM users WHERE id = $1", [numericId]);
+  return toUser(rows[0]);
 }
 
-function toPublicUser(user) {
-  const { passwordHash, ...publicUser } = user;
-  return publicUser;
+// Returns the new user, or null if the email is already registered. The UNIQUE constraint on
+// users.email makes this safe even when two requests register the same email at once.
+async function createUser({ email, passwordHash }) {
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, password_hash",
+      [email, passwordHash]
+    );
+    return toUser(rows[0]);
+  } catch (err) {
+    if (err.code === UNIQUE_VIOLATION) return null;
+    throw err;
+  }
+}
+
+// The user as returned by the API: no password hash, plus their cart and wishlist.
+async function toPublicUser(user) {
+  const [cart, wishlist] = await Promise.all([getCart(user.id), getWishlist(user.id)]);
+  return { id: user.id, email: user.email, cart, wishlist };
 }
 
 module.exports = {

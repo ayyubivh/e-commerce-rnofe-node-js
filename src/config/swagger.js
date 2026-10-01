@@ -17,7 +17,7 @@ const options = {
       title: "E-Commerce API",
       version: "1.0.0",
       description:
-        "Basic REST API for an e-commerce app (register/login by email, products, cart, wishlist). Data is in-memory and resets on restart.",
+        "Basic REST API for an e-commerce app (register/login by email, products, cart, wishlist). Data is stored in PostgreSQL.",
     },
     servers,
     components: {

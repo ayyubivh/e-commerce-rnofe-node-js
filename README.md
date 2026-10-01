@@ -1,14 +1,14 @@
 # E-Commerce REST API
 
-A basic REST API for an e-commerce app, built with Express. Uses in-memory/seeded
-data (no database needed) so it's easy to run and test locally.
+A basic REST API for an e-commerce app, built with Express and PostgreSQL.
+Tables are created and the product catalog is seeded automatically on startup.
 
 ## Features
 
 - JWT-based authentication (register / login with email + password)
 - Password hashing with bcrypt
 - Protected routes for cart and wishlist
-- Seeded in-memory product catalog
+- PostgreSQL storage (users, products, cart, wishlist) with a seeded product catalog
 - Input validation with clear error messages and proper HTTP status codes
 - Centralized error handling
 - Interactive Swagger/OpenAPI docs at `/api-docs`
@@ -30,11 +30,16 @@ ecommerce-api/
 │   │   ├── productController.js
 │   │   ├── cartController.js
 │   │   └── wishlistController.js
-│   ├── models/                # in-memory data access
+│   ├── models/                # SQL queries (data access)
 │   │   ├── User.js
-│   │   └── Product.js
+│   │   ├── Product.js
+│   │   ├── Cart.js
+│   │   └── Wishlist.js
+│   ├── db/
+│   │   ├── pool.js            # pg connection pool
+│   │   └── init.js            # creates tables + seeds products on startup
 │   ├── data/
-│   │   └── products.js        # seeded product catalog
+│   │   └── products.js        # seed data for the product catalog
 │   ├── middleware/
 │   │   ├── auth.js             # JWT auth guard
 │   │   ├── validate.js         # express-validator error formatter
@@ -48,12 +53,15 @@ ecommerce-api/
 
 ## Setup
 
-Requires Node.js 18+.
+Requires Node.js 18+ and a PostgreSQL database.
 
 ```bash
+# create a local database once (or use any Postgres you already have)
+createdb ecommerce
+
 cd ecommerce-api
 npm install
-cp .env.example .env
+cp .env.example .env   # then set DATABASE_URL to your database
 npm run dev   # starts with nodemon on http://localhost:3000
 # or: npm start
 ```
@@ -65,9 +73,12 @@ Environment variables (`.env`):
 | `PORT`           | Port the server listens on          | `3000`               |
 | `JWT_SECRET`     | Secret used to sign JWTs            | `dev-secret-change-me` |
 | `JWT_EXPIRES_IN` | JWT expiry (e.g. `1h`, `7d`)         | `1h`                 |
+| `DATABASE_URL`   | PostgreSQL connection string        | *(required)*         |
+| `DATABASE_SSL`   | `true` for hosted DBs over public internet | `false`      |
 
-> Note: all data (users, carts, wishlists) is stored **in memory** and resets
-> whenever the server restarts.
+On startup the server creates the `users`, `products`, `cart_items` and
+`wishlist_items` tables if they don't exist and seeds the product catalog.
+The server refuses to start if `DATABASE_URL` is missing or unreachable.
 
 ## Deploying so other developers can use it
 
@@ -108,10 +119,10 @@ app is already deploy-ready (`PORT` comes from the environment, there's a
   - **Cold starts**: Render's free tier spins the service down after ~15 minutes
     of inactivity. The first request after idle can take 30–50 seconds to respond
     while it wakes back up — not a bug.
-  - **In-memory data**: users/carts/wishlists live in memory, so they reset
-    whenever the service restarts or redeploys (including the free-tier spin
-    down/wake cycle). Fine for API testing and demos; don't rely on data
-    surviving long term.
+  - **Database**: data lives in PostgreSQL, so it survives restarts and
+    redeploys. `render.yaml` provisions a free Postgres (`ecommerce-db`) and
+    wires `DATABASE_URL` automatically. Render's free Postgres instances are
+    time-limited, so upgrade the plan for anything long-lived.
 
 **Alternatives:** [Railway](https://railway.app) works the same way (connect
 GitHub repo, it auto-detects Node and the `start` script). For a quick,
